@@ -1,0 +1,120 @@
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 120
+indent-width = 2
+
+target-version = "py310"
+
+[lint]
+# Enable preview features.
+preview = true
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = [
+    "F",  # Pyflakes
+    "W6",
+    "E71",
+    "E72",
+    "E112",   # no-indented-block
+    "E113",   # unexpected-indentation
+    # "E124",
+    "E203",   # whitespace-before-punctuation
+    "E272",   # multiple-spaces-before-keyword
+    "E275",   # missing-whitespace-after-keyword
+    "E303",   # too-many-blank-lines
+    "E304",   # blank-line-after-decorator
+    "E501",   # line-too-long
+    # "E502",
+    "E702",   # multiple-statements-on-one-line-semicolon
+    "E703",   # useless-semicolon
+    "E731",   # lambda-assignment
+    "W191",   # tab-indentation
+    "W291",   # trailing-whitespace
+    "W293",   # blank-line-with-whitespace
+    "UP039",  # unnecessary-class-parentheses
+    "UP007",
+    "C416",   # unnecessary-comprehension
+    "RET506", # superfluous-else-raise
+    "RET507", # superfluous-else-continue
+    "A",      # builtin-variable-shadowing, builtin-argument-shadowing, builtin-attribute-shadowing
+    "SIM105", # suppressible-exception
+    "FURB110",# if-exp-instead-of-or-operator
+    "RUF018", # assignment-in-assert
+    "UP",
+]
+
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[format]
+# Enable preview features.
+preview = true
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+
+[lint.isort]
+case-sensitive = false
+from-first = false
+force-single-line = true
+lines-between-types = 1
+lines-after-imports = 2
+force-wrap-aliases = true
+combine-as-imports = true
+single-line-exclusions = ["typing", "collections.abc"]

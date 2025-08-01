@@ -1,0 +1,42 @@
+[project]
+name = "manuscript"
+version = "0.1.0"
+description = "Dead simple configuration for Python scripts."
+authors = [{ name = "Oleg Pavlovich", email = "pavlovi4.o@gmail.com" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+dependencies = ["tyro", "pydantic", "omegaconf"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/manu"]
+
+[tool.uv]
+dev-dependencies = [
+    "coverage>=7.6.9",
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.390",
+    "pytest-mock>=3.14.0",
+    "pytest>=8.3.4",
+    "ruff>=0.8.2",
+]
