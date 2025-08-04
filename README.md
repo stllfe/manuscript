@@ -1,10 +1,16 @@
-# manu:script
+<div align="center">
 
-**Dead simple configuration for Python scripts.**
+# `manu:script` ✍️
+
+_dead simple configuration for simple Python scripts_
+
+@powered by [`tyro`](https://github.com/brentyi/tyro) and [`pydantic`](https://github.com/pydantic/pydantic) 🚀
+
+</div>
 
 `manu` is a small, zero-boilerplate library that turns a section of your Python script into a powerful, type-checked, and configurable CLI application. It's designed for simple scripts, research code, and ML experiments where you want to avoid writing complex `argparse` or `dataclass`-based configuration systems.
 
-It is directly inspired by Andrej Karpathy's "Poor Man's Configurator" and aims to provide a more robust and feature-rich solution to the same problem: how to easily override variables from the command line without cluttering the main script.
+It is directly inspired by Andrej Karpathy's "Poor Man's Configurator" from [`nanoGPT`](https://github.com/karpathy/nanoGPT/blob/master/configurator.py) repo and aims to provide a more robust and feature-rich solution to the same problem: how to easily override variables from the command line without cluttering the main script. It's a remedy for simple scripts with rapid changes like the ones typical for ML experiments.
 
 ## The Problem
 
@@ -26,17 +32,6 @@ Simple scripts often start with a block of configuration variables at the top. W
 - **Config File Overrides**: Load a base configuration from a Python file and override specific values from the CLI.
 - **Save Final Configuration**: Save the fully-resolved configuration to a new, runnable Python script for perfect reproducibility.
 - **Dynamic Defaults**: Variables can be initialized with runtime values (e.g., `time.time()`), and these can still be overridden from the CLI.
-
-## How It Works
-
-You designate a "configurable section" in your script with `script.init()` and `script.done()`. `manu` parses the source code of this section using Python's `ast` module to extract variable names, types, default values, and even comments as help text. It then uses this information to:
-
-1. Build a configuration schema.
-2. Generate a CLI.
-3. Parse arguments, handling special syntax for config files (`-c`) and saving a patched script copy (`-p`).
-4. Process values for interpolation and custom hooks.
-5. Validate the final, resolved values with `pydantic`.
-6. Inject the final values back into your script's global scope.
 
 ## Usage Example
 
@@ -147,6 +142,17 @@ python simple.py --beta 0.8 ... -p /tmp/exp/simple_exp_01.py
 ```
 
 This will create a new `simple_exp_01.py` script with all the final, resolved variable values in place of the previously CLI-configurable ones.
+
+## How It Works
+
+You designate a "configurable section" in your script with `script.init()` and `script.done()`. `manu` parses the source code of this section using Python's `ast` module to extract variable names, types, default values, and even comments as help text. It then uses this information to:
+
+1. Build a configuration schema.
+2. Generate a CLI.
+3. Parse arguments, handling special syntax for config files (`-c`) and saving a patched script copy (`-p`).
+4. Process values for interpolation and custom hooks.
+5. Validate the final, resolved values with `pydantic`.
+6. Inject the final values back into your script's global scope.
 
 ## Installation
 
