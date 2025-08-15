@@ -1,3 +1,5 @@
+"""Core manu:script entities."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -10,6 +12,7 @@ from pydantic import create_model
 from tyro.conf._markers import Marker
 
 from .capture import CodeCapture
+from .context import ValidationContext
 from .model import ScriptModel
 from .parsing import get_script_vars
 from .parsing import make_fields_from_vars
@@ -90,10 +93,18 @@ class Script:
     variables = get_script_vars(code.filename, code.code, code.lframe.context)
     description = self.description or code.current_globals.get("__doc__")
     fields = make_fields_from_vars(variables)
+
+    # build the pydantic schema
     Args: type[ScriptModel] = create_model("Args", __base__=ScriptModel, **fields)
-    args: ScriptModel = tyro.cli(Args, description=description, config=self.config)
-    updated_globals = args.model_dump()
-    code.current_globals.update(updated_globals)
+
+    with ValidationContext.root_data(code.current_globals):
+      args: ScriptModel = tyro.cli(Args, description=description, config=self.config)
+
+    # FIXME: round-trip to handle hooks expansion
+    dump = args.model_dump()
+    args = args.model_validate(dump)
+    final_context = args.model_dump()
+    code.current_globals.update(final_context)
 
 
 script = Script()

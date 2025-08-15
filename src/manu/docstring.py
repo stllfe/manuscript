@@ -180,6 +180,8 @@ def get_var_docstring(source: str, var_name: str, markers: tuple[_markers.Marker
   if final_token_on_line.token_type == tokenize.COMMENT:
     comment: str = final_token_on_line.content
     assert comment.startswith("#")
+    if comment.startswith("#!"):
+      return
     if comment.startswith("#:"):  # Sphinx autodoc-style comment.
       # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directive-autoattribute
       return _strings.remove_single_line_breaks(comment[2:].strip())

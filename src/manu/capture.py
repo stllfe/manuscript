@@ -1,3 +1,5 @@
+"""Script section code capturing utility."""
+
 # based on:
 # https://stackoverflow.com/questions/36815410/is-there-any-way-to-get-source-code-inside-context-manager-as-string/78485159#78485159
 

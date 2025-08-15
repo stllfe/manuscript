@@ -1,3 +1,5 @@
+"""Custom Pydantic :class:`BaseModel` subclass with automatic hooks resolving."""
+
 import logging
 import re
 
@@ -72,7 +74,7 @@ class ScriptModel(BaseModel):
       if field_name not in hints:
         continue
 
-      requires_resolution = isinstance(field_value, str) and ("@{" in field_value or field_value.startswith("@"))
+      requires_resolution = isinstance(field_value, str) and field_value.startswith(HOOK_PREFIX)
 
       if requires_resolution:
         # Handle string interpolation: replace @{var} with variable values
@@ -82,21 +84,24 @@ class ScriptModel(BaseModel):
         for match in re.finditer(PREFIXED_HOOK_EXPANSION_REGEX, field_value):
           var_path = match.group(1)
           logger.debug(f"Attempting to interpolate @{{{var_path}}} in field {field_name}")
-          try:
-            replacement = ValidationContext.get_nested_value(var_path)
-            logger.debug(f"Found replacement value: {replacement}")
-            processed_value = processed_value.replace(match.group(0), str(replacement))
-          except ValueError as e:
-            # If variable not found, leave it as is for now
-            logger.debug(f"Failed to interpolate {var_path}: {e}")
-            pass
+          #          try:
+          replacement = ValidationContext.get_nested_value(var_path.replace("-", "_"))
+          logger.debug(f"Found replacement value: {replacement}")
+          processed_value = processed_value.replace(match.group(0), str(replacement))
+          # except ValueError as e:
+          #   # If variable not found, leave it as is for now
+          #   logger.debug(f"Failed to interpolate {var_path}: {e}")
 
         # If the entire value is a single @reference, process it as a hook
-        if processed_value == field_value and field_value.startswith("@") and not field_value.startswith("@{"):
+        if field_value.startswith(HOOK_PREFIX) and not re.match(PREFIXED_HOOK_EXPANSION_REGEX, field_value):
           processed_value = cls._process_reference(field_value)
 
         v[field_name] = processed_value
 
+    # # Second-check loop
+    # for field_name, field_value in v.items():
+    #   if isinstance(field_value, str) and field_value.startswith(HOOK_PREFIX):
+    #     raise ValueError(f"Failed to interpolate: {field_name} -> {field_value}. Does it exist?")
     return v
 
   @classmethod

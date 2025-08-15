@@ -1,3 +1,5 @@
+"""Custom validation context for Pydantic models."""
+
 import logging
 
 from contextlib import contextmanager
@@ -48,8 +50,8 @@ class ValidationContext:
     keys = path.split(".")
     for key in keys:
       if not isinstance(data, dict):
-        raise ValueError(f"Cannot traverse path {path}: {key} is not a dict")
+        raise ValueError(f"Cannot traverse path {path!r}: {key!r} is not a dict")
       if key not in data:
-        raise ValueError(f"Key {key} not found in path {path}")
+        raise ValueError(f"Key {key!r} not found in path {path!r}. Does it exist?")
       data = data[key]
     return data

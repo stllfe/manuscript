@@ -1,3 +1,5 @@
+"""Code parsing utilities."""
+
 import ast
 
 from collections.abc import Sequence
