@@ -1,6 +1,7 @@
 """Helpers for parsing docstrings. Used for helptext generation."""
 # NOTE: mostly based on tyro._docstring module, but I think we have to simplify it further a lot for flat simple scripts
 
+import ast
 import dataclasses
 import functools
 import io
@@ -187,6 +188,20 @@ def get_var_docstring(source: str, var_name: str, markers: tuple[_markers.Marker
       return _strings.remove_single_line_breaks(comment[2:].strip())
     else:
       return _strings.remove_single_line_breaks(comment[1:].strip())
+
+  # Check for a single string literal on the next logical line, which we
+  # interpret as a docstring for the preceding variable.
+  next_logical_line = var_data.logical_line + 1
+  if next_logical_line in tokenization.tokens_from_logical_line:
+    next_line_tokens = tokenization.tokens_from_logical_line[next_logical_line]
+    if len(next_line_tokens) == 1 and next_line_tokens[0].token_type == tokenize.STRING:
+      string_token = next_line_tokens[0]
+      try:
+        string_value = ast.literal_eval(string_token.content)
+      except Exception:
+        # Fallback: strip quotes crudely if literal_eval fails.
+        string_value = string_token.content.strip().strip('"').strip("'")
+      return _strings.remove_single_line_breaks(str(string_value).strip())
 
   # Check for comments that come before the field. This is intentionally written to
   # support comments covering multiple (grouped) fields, for example:
