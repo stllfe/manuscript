@@ -5,6 +5,8 @@ Turns a section of your Python script into a powerful, type-checked,
 and configurable CLI application.
 """
 
-from .script import hook, init, ready
+from . import conf
+from .script import script
 
-__all__ = ["init", "ready", "hook"]
+
+__all__ = ["script", "conf"]

@@ -1,37 +1,19 @@
-# utilities for parsing doc and comment strings
-# this is used to make automatic help string from comments
-# TODO: implement it
-
-# below given code that's used by tyro._docstring library, but I think we have to simplify it a lot for flat simple scripts
-
-
 """Helpers for parsing docstrings. Used for helptext generation."""
+# NOTE: mostly based on tyro._docstring module, but I think we have to simplify it further a lot for flat simple scripts
 
-import builtins
-import collections.abc
 import dataclasses
 import functools
-import inspect
 import io
-import itertools
-import sys
 import tokenize
 
-from collections.abc import Callable, Hashable
-from typing import (
-  Generic,
-  TypeVar,
-  get_origin,
-)
+from collections.abc import Callable
+from typing import TypeVar
 
 import docstring_parser
 
-from typing_extensions import is_typeddict
-
-from . import _resolver
-from . import _strings
-from . import _unsafe_cache
-from .conf import _markers
+from tyro import _strings
+from tyro import _unsafe_cache
+from tyro.conf import _markers
 
 
 T = TypeVar("T", bound=Callable)
@@ -46,7 +28,7 @@ class _Token:
 
 
 @dataclasses.dataclass(frozen=True)
-class _FieldData:
+class _VarData:
   index: int
   logical_line: int
   actual_line: int
@@ -54,22 +36,23 @@ class _FieldData:
 
 
 @dataclasses.dataclass(frozen=True)
-class _ClassTokenization:
+class _ScriptTokenization:
   tokens: list[_Token]
   tokens_from_logical_line: dict[int, list[_Token]]
   tokens_from_actual_line: dict[int, list[_Token]]
-  field_data_from_name: dict[str, _FieldData]
+  var_data_from_name: dict[str, _VarData]
 
   @staticmethod
   @_unsafe_cache.unsafe_cache(64)
-  def make(clz) -> "_ClassTokenization":
-    """Parse the source code of a class, and cache some tokenization information."""
-    readline = io.BytesIO(inspect.getsource(clz).encode("utf-8")).readline
+  def make(source: str) -> "_ScriptTokenization":
+    """Parse the source code of a script, and cache some tokenization information."""
+
+    readline = io.BytesIO(source.encode("utf-8")).readline
 
     tokens: list[_Token] = []
     tokens_from_logical_line: dict[int, list[_Token]] = {1: []}
     tokens_from_actual_line: dict[int, list[_Token]] = {1: []}
-    field_data_from_name: dict[str, _FieldData] = {}
+    var_data_from_name: dict[str, _VarData] = {}
 
     logical_line: int = 1
     actual_line: int = 1
@@ -96,7 +79,7 @@ class _ClassTokenization:
         tokens_from_logical_line[logical_line].append(token)
         tokens_from_actual_line[actual_line].append(token)
 
-    prev_field_logical_line: int = 1
+    prev_var_logical_line: int = 1
     for i, token in enumerate(tokens[:-1]):
       if token.token_type == tokenize.NAME:
         # Naive heuristic for field names.
@@ -111,67 +94,50 @@ class _ClassTokenization:
         if not is_first_token:
           continue
 
-        if tokens[i + 1].content == ":" and token.content not in field_data_from_name:
-          field_data_from_name[token.content] = _FieldData(
+        if token.content not in var_data_from_name:
+          var_data_from_name[token.content] = _VarData(
             index=i,
             logical_line=token.logical_line,
             actual_line=token.actual_line,
-            prev_field_logical_line=prev_field_logical_line,
+            prev_field_logical_line=prev_var_logical_line,
           )
-          prev_field_logical_line = token.logical_line
+          prev_var_logical_line = token.logical_line
 
-    return _ClassTokenization(
+    return _ScriptTokenization(
       tokens=tokens,
       tokens_from_logical_line=tokens_from_logical_line,
       tokens_from_actual_line=tokens_from_actual_line,
-      field_data_from_name=field_data_from_name,
+      var_data_from_name=var_data_from_name,
     )
 
 
 @_unsafe_cache.unsafe_cache(1024)
-def get_class_tokenization_with_field(cls: type, field_name: str) -> _ClassTokenization | None:
+def get_script_tokenization_with_var(source: str, var_name: str) -> _ScriptTokenization | None:
   # Search for token in this class + all parents.
-  found_field: bool = False
-  classes_to_search = cls.__mro__
-  tokenization = None
-  for search_cls in classes_to_search:
-    # Inherited generics seem challenging for now.
-    # https://github.com/python/typing/issues/777
-    assert search_cls is Generic or get_origin(search_cls) is None
+  try:
+    tokenization = _ScriptTokenization.make(source)  # type: ignore
+  except ValueError:
+    # OSError is raised when we can't read the source code. This is
+    # fine, we just assume there's no docstring. We can uncomment the
+    # assert below for debugging.
+    #
+    # assert (
+    #     # Dynamic dataclasses.
+    #     "could not find class definition" in e.args[0]
+    #     # Pydantic.
+    #     or "source code not available" in e.args[0]
+    #     # Third error that can be raised by inspect.py.
+    #     or "could not get source code" in e.args[0]
+    # )
+    return None
+  except TypeError as e:  # pragma: no cover
+    # Notebooks cause “___ is a built-in class” TypeError.
+    assert "built-in class" in e.args[0]
+    return None
 
-    try:
-      tokenization = _ClassTokenization.make(search_cls)  # type: ignore
-    except OSError:
-      # OSError is raised when we can't read the source code. This is
-      # fine, we just assume there's no docstring. We can uncomment the
-      # assert below for debugging.
-      #
-      # assert (
-      #     # Dynamic dataclasses.
-      #     "could not find class definition" in e.args[0]
-      #     # Pydantic.
-      #     or "source code not available" in e.args[0]
-      #     # Third error that can be raised by inspect.py.
-      #     or "could not get source code" in e.args[0]
-      # )
-      return None
-    except TypeError as e:  # pragma: no cover
-      # Notebooks cause “___ is a built-in class” TypeError.
-      assert "built-in class" in e.args[0]
-      return None
-
-    # Grab field-specific tokenization data.
-    if field_name in tokenization.field_data_from_name:
-      found_field = True
-      break
-
-  if dataclasses.is_dataclass(cls):
-    assert found_field, (
-      "Docstring parsing error -- this usually means that there are multiple"
-      " dataclasses in the same file with the same name but different scopes."
-    )
-
-  return tokenization
+  # Grab field-specific tokenization data.
+  if var_name in tokenization.var_data_from_name:
+    return tokenization
 
 
 @functools.lru_cache(maxsize=1024)
@@ -184,33 +150,33 @@ def parse_docstring_from_object(obj: object) -> dict[str, str]:
 
 
 @_unsafe_cache.unsafe_cache(1024)
-def get_field_docstring(cls: type, field_name: str, markers: tuple[_markers.Marker, ...]) -> str | None:
-  """Get docstring for a field in a class."""
+def get_var_docstring(source: str, var_name: str, markers: tuple[_markers.Marker, ...]) -> str | None:
+  """Get docstring for a variable in a script."""
 
   # NoneType will break docstring_parser.
-  if cls is type(None):
-    return None
+  # if cls is type(None):
+  #   return None
 
-  # Try to parse using docstring_parser.
-  for cls_search in cls.__mro__:
-    if cls_search.__module__ == "builtins":
-      continue  # Skip `object`, `Callable`, `tuple`, etc.
-    docstring = parse_docstring_from_object(cls_search).get(field_name, None)
-    if docstring is not None:
-      return _strings.dedent(_strings.remove_single_line_breaks(docstring)).strip()
+  # # Try to parse using docstring_parser.
+  # for cls_search in cls.__mro__:
+  #   if cls_search.__module__ == "builtins":
+  #     continue  # Skip `object`, `Callable`, `tuple`, etc.
+  #   docstring = parse_docstring_from_object(cls_search).get(field_name, None)
+  #   if docstring is not None:
+  #     return _strings.dedent(_strings.remove_single_line_breaks(docstring)).strip()
 
   if _markers.HelptextFromCommentsOff in markers:
     return None
 
   # If docstring_parser failed, let's try looking for comments.
-  tokenization = get_class_tokenization_with_field(cls, field_name)
+  tokenization = get_script_tokenization_with_var(source, var_name)
   if tokenization is None:  # Currently only happens for dynamic dataclasses.
     return None
 
-  field_data = tokenization.field_data_from_name[field_name]
+  var_data = tokenization.var_data_from_name[var_name]
 
   # Check for comment on the same line as the field.
-  final_token_on_line = tokenization.tokens_from_logical_line[field_data.logical_line][-1]
+  final_token_on_line = tokenization.tokens_from_logical_line[var_data.logical_line][-1]
   if final_token_on_line.token_type == tokenize.COMMENT:
     comment: str = final_token_on_line.content
     assert comment.startswith("#")
@@ -243,15 +209,15 @@ def get_field_docstring(cls: type, field_name: str, markers: tuple[_markers.Mark
   # Get first line of the class definition, excluding decorators. This logic is only
   # needed for Python >= 3.9; in 3.8, we can simply use
   # `tokenization.tokens[0].logical_line`.
-  classdef_logical_line = -1
-  for token in tokenization.tokens:
-    if token.content == "class":
-      classdef_logical_line = token.logical_line
-      break
-  assert classdef_logical_line != -1
+  # classdef_logical_line = -1
+  # for token in tokenization.tokens:
+  #   if token.content == "class":
+  #     classdef_logical_line = token.logical_line
+  #     break
+  # assert classdef_logical_line != -1
 
   comments: list[str] = []
-  current_actual_line = field_data.actual_line - 1
+  current_actual_line = var_data.actual_line - 1
   directly_above_field = True
   is_sphinx_doc_comment = False
   while current_actual_line in tokenization.tokens_from_actual_line:
@@ -264,8 +230,8 @@ def get_field_docstring(cls: type, field_name: str, markers: tuple[_markers.Mark
     # We don't look in the first logical line. This includes all comments that come
     # before the end parentheses in the class definition (eg comments in the
     # subclass list).
-    if actual_line_tokens[0].logical_line <= classdef_logical_line:
-      break
+    # if actual_line_tokens[0].logical_line <= classdef_logical_line:
+    #   break
 
     # Record single comments!
     if len(actual_line_tokens) == 1 and actual_line_tokens[0].token_type is tokenize.COMMENT:
@@ -290,74 +256,3 @@ def get_field_docstring(cls: type, field_name: str, markers: tuple[_markers.Mark
     return _strings.remove_single_line_breaks("\n".join(reversed(comments)))
 
   return None
-
-
-_callable_description_blocklist: set[Hashable] = set(
-  filter(
-    lambda x: isinstance(x, Hashable),  # type: ignore
-    itertools.chain(
-      vars(builtins).values(),
-      vars(collections.abc).values(),
-    ),
-  )
-)
-
-
-@_unsafe_cache.unsafe_cache(1024)
-def get_callable_description(f: Callable) -> str:
-  """Get description associated with a callable via docstring parsing.
-
-  `dataclasses.dataclass` will automatically populate __doc__ based on the
-  fields of the class if a docstring is not specified; this helper will
-  ignore these docstrings."""
-
-  f, _ = _resolver.resolve_generic_types(f)
-  f = _resolver.unwrap_origin_strip_extras(f)
-  if f in _callable_description_blocklist:
-    return ""
-
-  # Return original docstring when used with functools.partial, not
-  # functools.partial's docstinrg.
-  if isinstance(f, functools.partial):
-    f = f.func
-
-  if "pydantic" in sys.modules.keys():
-    try:
-      import pydantic
-    except ImportError:
-      # Needed for mock import test.
-      pydantic = None  # type: ignore
-  else:
-    pydantic = None  # type: ignore
-
-  # Note inspect.getdoc() causes some corner cases with TypedDicts.
-  docstring = f.__doc__
-  if (
-    docstring is None
-    and inspect.isclass(f)
-    # Ignore TypedDict's __init__ docstring, because it will just be `dict`
-    and not is_typeddict(f)
-    # Ignore NamedTuple __init__ docstring.
-    and not _resolver.is_namedtuple(f)
-    # Ignore pydantic base model constructor docstring.
-    and not (pydantic is not None and f.__init__ is pydantic.BaseModel.__init__)  # type: ignore
-  ):
-    docstring = f.__init__.__doc__  # type: ignore
-  if docstring is None:
-    return ""
-
-  docstring = _strings.dedent(docstring)
-
-  if dataclasses.is_dataclass(f):
-    default_doc = f.__name__ + str(inspect.signature(f)).replace(" -> None", "")  # type: ignore
-    if docstring == default_doc:
-      return ""
-
-  parsed_docstring = docstring_parser.parse(docstring)
-
-  parts: list[str] = []
-  if parsed_docstring.short_description is not None:
-    parts.append(parsed_docstring.short_description)
-  if parsed_docstring.long_description is not None:
-    parts.append(parsed_docstring.long_description)
-  return "\n".join(parts)

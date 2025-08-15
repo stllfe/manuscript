@@ -12,16 +12,19 @@ from .context import ValidationContext
 logger = logging.getLogger(__name__)
 
 HOOK_PREFIX = "@"
-HOOK_EXPANSION_REGEX = re.compile(r"\{(.*)\}")
+HOOK_EXPANSION_REGEX = re.compile(r"\{([^}]+)\}")
+PREFIXED_HOOK_EXPANSION_REGEX = re.compile(r"@\{([^}]+)\}")
+
+HandlerType = Callable[[Any, ValidationContext], Any]
 
 
 class HookRegistry:
   """Global registry mapping reference hooks to their handler functions."""
 
-  _handlers: dict[str, Callable] = {}
+  _handlers: dict[str, HandlerType] = {}
 
   @classmethod
-  def register(cls, hook: str, handler: Callable):
+  def register(cls, hook: str, handler: HandlerType):
     """Register a handler function for a reference hook."""
     if hook in cls._handlers:
       raise ValueError(f"Handler already registered for hook: {hook}")
@@ -29,7 +32,7 @@ class HookRegistry:
     logger.debug(f"Registered handler for hook: {hook}")
 
   @classmethod
-  def get_handler(cls, hook: str) -> Callable:
+  def get_handler(cls, hook: str) -> HandlerType:
     """Get the handler for a reference hook."""
     if hook not in cls._handlers:
       raise ValueError(f"No handler registered for hook: {hook}")
@@ -44,17 +47,21 @@ class HookRegistry:
 def hook(hook: str):
   """Decorator to register a reference hook handler function."""
 
-  def decorator(handler: Callable):
+  def decorator(handler: HandlerType) -> HandlerType:
     HookRegistry.register(hook, handler)
     return handler
 
   return decorator
 
 
-# Implement built-in hooks
+# Built-in hooks below:
+# ---------------------
+
+
 @hook("import")
 def import_hook(path: str, _: ValidationContext) -> Any:
   """Handle @import:module.path.to.thing references."""
+
   module_path, attr = path.rsplit(".", 1)
   try:
     module = importlib.import_module(module_path)
@@ -64,14 +71,16 @@ def import_hook(path: str, _: ValidationContext) -> Any:
 
 
 @hook("value")
-def value_hook(path: str, context: ValidationContext) -> Any:
+def value_hook(path: str, ctx: ValidationContext) -> Any:
   """Handle @value:path.to.value references."""
-  return context.get_nested_value(path)
+
+  return ctx.get_nested_value(path)
 
 
 @hook("env")
 def env_hook(name: str, _: ValidationContext) -> str:
   """Handle @env:VARIABLE_NAME references."""
+
   try:
     return os.environ[name]
   except KeyError as e:

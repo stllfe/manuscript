@@ -67,7 +67,7 @@ print("Using exp name:", exp_name)
 
 ```
 
-If you are not bothered by a single indent, you may use the context manager like so:
+If you are not bothered by an additional indent, you may use the context manager like so:
 
 ```python
 

@@ -19,7 +19,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Utilities",
 ]
-dependencies = ["tyro", "pydantic", "omegaconf"]
+dependencies = [
+    "tyro",
+    "pydantic",
+    "omegaconf",
+    "dill>=0.4.0",
+    "colorama>=0.4.6",
+]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
