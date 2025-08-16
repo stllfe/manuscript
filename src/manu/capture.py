@@ -45,8 +45,17 @@ class CodeCapture:
   level: int = 1
   code: str | None = field(default=None, init=False)
   filename: str | None = field(default=None, init=False)
-  fframe: CallFrame | None = field(default=None, init=False)
-  lframe: CallFrame | None = field(default=None, init=False)
+
+  def __post_init__(self) -> None:
+    self.code: str | None = None
+    self.filename: str | None = None
+    self.fframe: CallFrame | None = None
+    self.lframe: CallFrame | None = None
+
+  @property
+  def current_globals(self) -> dict[str, Any]:
+    assert self.lframe  # noqa
+    return self.lframe.context
 
   def initialize(self) -> None:
     cf = inspect.currentframe()
@@ -85,8 +94,3 @@ class CodeCapture:
         lines.append(next_line[indent:])
       i += 1
     return lines
-
-  @property
-  def current_globals(self) -> dict[str, Any]:
-    assert self.lframe  # noqa
-    return self.lframe.context

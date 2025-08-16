@@ -13,6 +13,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
+from tyro.conf._confstruct import _ArgConfig as ArgConf
 
 from .context import ValidationContext
 from .hooks import HOOK_EXPANSION_REGEX
@@ -25,20 +26,29 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-ManuConfArg = tyro.conf.arg(
+ManuConfArg: ArgConf = tyro.conf.arg(
   metavar="PATH",
-  name="@config",
+  name="with",
   aliases=["-c"],
   help_behavior_hint="(default: no overrides)",
   help="path to a python config file to load",
 )
+# TODO: do we actually need patching?
+# ManuPatchArg: ArgConf = tyro.conf.arg(
+#   metavar="PATH",
+#   name="@patch",
+#   aliases=["-p"],
+#   help_behavior_hint="(default: no patching)",
+#   help="path to save the resulting patched script",
+# )
 
 
 class ScriptModel(BaseModel):
   """Base model class that automatically resolves hooks."""
 
   model_config = ConfigDict(arbitrary_types_allowed=True)
-  manu_config__: Annotated[str | Path, ManuConfArg] = Field(default="", exclude=True)
+  config_: Annotated[str | Path, ManuConfArg] = Field(default="", exclude=True)
+  # patch_: Annotated[str | Path, ManuPatchArg] = Field(default="", exclude=True)
 
   @classmethod
   def _process_reference(cls, ref: str) -> Any:

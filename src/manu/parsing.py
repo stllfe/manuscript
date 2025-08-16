@@ -27,7 +27,7 @@ def get_script_vars(
   code: str,
   context: dict[str, Any],
   markers: tuple[Marker, ...] = tuple(),
-) -> list[Variable]:
+) -> dict[str, Variable]:
   """Parse the configuration code segment to extract variable definitions."""
 
   # parse the code segment
@@ -49,7 +49,7 @@ def get_script_vars(
       candidates.append(node.target.id)
 
   # Process each variable
-  variables = []
+  variables = {}
   annotations = context.get("__annotations__", {})
   for name in candidates:
     if name.startswith("_"):
@@ -57,7 +57,7 @@ def get_script_vars(
     value = context.get(name)
     type_hint = annotations.get(name, type(value) if value is not None else Any)
     docstring = get_var_docstring(code, name, markers)
-    variables.append(Variable(name, type_hint, value, docstring))
+    variables[name] = Variable(name, type_hint, value, docstring)
 
   return variables
 

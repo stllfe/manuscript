@@ -1,9 +1,11 @@
 """Manu's forward port of a subset of tyro config system.
+
 ---
 The tyro.conf submodule contains helpers for attaching parsing-specific
-configuration metadata to types via PEP 593 <https://peps.python.org/pep-0593/>_ runtime annotations.
+configuration metadata to types via PEP 593 <https://peps.python.org/pep-0593/> runtime annotations.
 
-See further:
+---
+Read more:
 https://brentyi.github.io/tyro/examples/basics/#configuration-via-typing-annotated
 """
 

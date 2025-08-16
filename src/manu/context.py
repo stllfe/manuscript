@@ -19,6 +19,7 @@ class ValidationContext:
   @contextmanager
   def root_data(cls, data: dict):
     """Store the root data during validation."""
+
     # Initialize depth counter if needed
     if not hasattr(cls._context, "depth"):
       cls._context.depth = 0
@@ -39,11 +40,13 @@ class ValidationContext:
   @classmethod
   def get_root_data(cls) -> dict | None:
     """Get the current root data."""
+
     return getattr(cls._context, "data", None)
 
   @classmethod
   def get_nested_value(cls, path: str) -> Any:
     """Get a value from the root data using dot notation path."""
+
     data = cls.get_root_data()
     if not data:
       raise ValueError(f"Cannot get value at {path}, because there is no validation context data.")

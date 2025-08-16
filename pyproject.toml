@@ -1,9 +1,9 @@
 [project]
 name = "manuscript"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Dead simple configuration for Python scripts."
 authors = [{ name = "Oleg Pavlovich", email = "pavlovi4.o@gmail.com" }]
-license = { file = "LICENSE" }
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -22,17 +22,16 @@ classifiers = [
 dependencies = [
     "tyro",
     "pydantic",
-    "omegaconf",
     "dill>=0.4.0",
     "colorama>=0.4.6",
 ]
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-source = "vcs"
+path = "src/manu/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/manu"]

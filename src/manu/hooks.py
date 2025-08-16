@@ -26,6 +26,7 @@ class HookRegistry:
   @classmethod
   def register(cls, hook: str, handler: HandlerType):
     """Register a handler function for a reference hook."""
+
     if hook in cls._handlers:
       raise ValueError(f"Handler already registered for hook: {hook}")
     cls._handlers[hook] = handler
@@ -34,6 +35,7 @@ class HookRegistry:
   @classmethod
   def get_handler(cls, hook: str) -> HandlerType:
     """Get the handler for a reference hook."""
+
     if hook not in cls._handlers:
       raise ValueError(f"No handler registered for hook: {hook}")
     return cls._handlers[hook]
@@ -41,6 +43,7 @@ class HookRegistry:
   @classmethod
   def clear(cls):
     """Clear all registered handlers."""
+
     cls._handlers.clear()
 
 

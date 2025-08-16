@@ -272,4 +272,4 @@ def get_var_docstring(source: str, var_name: str, markers: tuple[_markers.Marker
   if len(comments) > 0 and not (is_sphinx_doc_comment and not directly_above_field):
     return _strings.remove_single_line_breaks("\n".join(reversed(comments)))
 
-  return None
+  return
