@@ -14,12 +14,12 @@ Powered by [`tyro`](https://github.com/brentyi/tyro) and [`pydantic`](https://gi
 import manu
 import manu.conf as conf
 
-with manu.script as cfg:
-  exp_name: str = ...  # means required
+with manu.script as args:
+  exp_name: str = ...  # required
   out_dir: Path = ...  # rich types supported
-  device = "cpu" # with a default value, type hint may be omitted
-  learning_rate = 6e-4  # inline comments are used as arg help text
-  beta = 0.9  #! comments with ! are not rendered as help text
+  device = "cpu"  # with default, type hint is optional
+  learning_rate = 6e-4  # inline comments become help text
+  beta = 0.9  #! comments with ! are ignored
   max_iters = 6000000
   """this is a docstring for max_iters as well"""
   do_something: conf.Fixed[bool] = True  #! configure args via hints
@@ -30,10 +30,10 @@ print("Using exp name:", exp_name)
 
 # you can also do something with all the captured values
 print("All CLI variables:")
-print(cfg)  # Mapping[str, Any]
+print(args)  # Mapping[str, Any]
 
-# like log them or store them to a file:
-wandb.config.update(manu.script.values)  # same as cfg
+# log final config to wandb, mlflow, etc.
+wandb.config.update(manu.script.values)  # same as args
 ```
 
 It's designed for simple scripts, research code, and ML experiments where you want to avoid writing complex `argparse` or `dataclass`-based configuration systems.
