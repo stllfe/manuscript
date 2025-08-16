@@ -38,9 +38,7 @@ wandb.config.update(script.values)
 
 It's designed for simple scripts, research code, and ML experiments where you want to avoid writing complex `argparse` or `dataclass` based configuration systems.
 
-It's inspired by Andrej Karpathy's [Poor Man's Configurator from `nanoGPT`](https://github.com/karpathy/nanoGPT/blob/master/configurator.py) repo and aims to provide a more robust and feature-rich solution to the same problem: easily override variables from the command line without cluttering the main script.
-
-_It's a remedy for simple scripts with rapid changes like the ones typical for ML experiments._
+It's inspired by Andrej Karpathy's Poor Man's Configurator from [`nanoGPT`](https://github.com/karpathy/nanoGPT/blob/master/configurator.py) repo and aims to provide a more robust and feature-rich solution to the same problem: easily override variables from the CLI without cluttering the main script.
 
 ## Why? 🤔
 
@@ -62,7 +60,6 @@ Let's build a simple ML training script step by step to show how `manu` works.
 Start with a basic `train.py`:
 
 ```python
-# train.py
 from pathlib import Path
 import manu
 
@@ -92,7 +89,7 @@ $ python train.py -h
 ```
 **ℹ️ Self-documenting**: Comments and docstrings become help text without extra work.
 
-**🧩 Type-driven**: Supports rich Python builtin types like `pathlib.Path` or [Pydantic's custom ones](https://docs.pydantic.dev/2.0/usage/types/types/) like `FilePath`, etc:
+**🧩 Type-driven**: Supports rich Python builtin types like `pathlib.Path` or [Pydantic's ones](https://docs.pydantic.dev/2.0/usage/types/types/):
 
 ```python
 from pydantic import PositiveInt, FilePath
@@ -128,7 +125,7 @@ $ python train.py -c configs/base.py --exp-name "gpu-model" --out-dir "./outputs
 **🪝 Variable interpolation**: Reference other variables with `@{var}`:
 
 ```shell
-$ python train.py --exp-name "test-@{beta}" --out-dir ./outputs --beta 0.85
+$ python train.py --exp-name "test-@{beta}" --beta 0.85
 
 > Training test-0.85 on cpu
 ...
@@ -137,18 +134,18 @@ $ python train.py --exp-name "test-@{beta}" --out-dir ./outputs --beta 0.85
 **Built-in hooks**: use `@env:ENV_VAR`, `@import:pkg.mod.attr` or `@value:foo` (same as `@{foo}`).
 
 ```shell
-python train.py --exp-name @env:USER --device @env:CUDA_DEVICE --out-dir ./outputs
+python train.py --exp-name @env:USER --device @env:CUDA_DEVICE
 ```
 
 **Custom hooks**:
-Hooks are callables registered under a `name` that take exactly two positional arguments:
+Hooks are callables that take exactly two positional arguments:
 
 ```python
 from manu import hook, ValidationContext
 
 @hook("gpu")
-def gpu_hook(v: str, ctx: ValidationContext) -> str:
-    if v == "free":
+def gpu_hook(val: str, ctx: ValidationContext) -> str:
+    if val == "free":
         return find_free_cuda_device(...)
     # ... some fancy logic
     # get any other context value:
@@ -168,7 +165,6 @@ python simple.py --device @gpu:free
 **💾 Access resolved config**: Get the final configuration for logging:
 
 ```python
-# train.py
 with manu.script as config:
   exp_name: str = ...
   device = "cpu"
@@ -196,7 +192,7 @@ with script(config=settings):
   verbose: bool = False  # becomes --verbose/--no-verbose flags
 ```
 
-**Alternative inline approach**:
+**Alternative inline syntax**:
 
 ```python
 from manu import conf, script
@@ -237,7 +233,7 @@ uv sync
 - **Run inside the env:**
 
 ```shell
-uv run python simple.py -h
+uv run simple.py -h
 ```
 
 ## Development
