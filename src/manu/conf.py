@@ -11,6 +11,7 @@ https://brentyi.github.io/tyro/examples/basics/#configuration-via-typing-annotat
 
 from tyro.conf import EnumChoicesFromValues as EnumChoicesFromValues
 from tyro.conf import Fixed as Fixed
+from tyro.conf import FlagConversionOff as FlagConversionOff
 from tyro.conf import FlagCreatePairsOff as FlagCreatePairsOff
 from tyro.conf import HelptextFromCommentsOff as HelptextFromCommentsOff
 from tyro.conf import PositionalRequiredArgs as PositionalRequiredArgs
