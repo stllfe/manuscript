@@ -14,7 +14,7 @@ Powered by [`tyro`](https://github.com/brentyi/tyro) and [`pydantic`](https://gi
 import manu
 import manu.conf as conf
 
-with manu.script:
+with manu.script as cfg:
   exp_name: str = ...  # means required
   out_dir: Path = ...  # rich types supported
   device = "cpu" # with a default value, type hint may be omitted
@@ -30,10 +30,10 @@ print("Using exp name:", exp_name)
 
 # you can also do something with all the captured values
 print("All CLI variables:")
-print(script.values)  # Mapping[str, Any]
+print(cfg)  # Mapping[str, Any]
 
 # like log them or store them to a file:
-wandb.config.update(script.values)
+wandb.config.update(manu.script.values)  # same as cfg
 ```
 
 It's designed for simple scripts, research code, and ML experiments where you want to avoid writing complex `argparse` or `dataclass`-based configuration systems.
