@@ -2,12 +2,12 @@
 # NOTE: mostly based on tyro._docstring module, but I think we have to simplify it further a lot for flat simple scripts
 
 import ast
-import dataclasses
 import functools
 import io
 import tokenize
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TypeVar
 
 import docstring_parser
@@ -20,7 +20,7 @@ from tyro.conf import _markers
 T = TypeVar("T", bound=Callable)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class _Token:
   token_type: int
   content: str
@@ -28,7 +28,7 @@ class _Token:
   actual_line: int
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class _VarData:
   index: int
   logical_line: int
@@ -36,7 +36,7 @@ class _VarData:
   prev_field_logical_line: int
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class _ScriptTokenization:
   tokens: list[_Token]
   tokens_from_logical_line: dict[int, list[_Token]]
